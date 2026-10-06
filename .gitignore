@@ -1,0 +1,5 @@
+/target/
+/batch-metadata.mv.db
+/batch-metadata.trace.db
+/input/*.json
+*.log
