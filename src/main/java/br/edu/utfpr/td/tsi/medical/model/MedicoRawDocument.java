@@ -12,7 +12,7 @@ public class MedicoRawDocument {
     private String id;
     private String crm;
     private String estado;
-    private String arquivoOrigem;
+    private String origem;
     private LocalDateTime dataImportacao;
     private Map<String, Object> camposOriginais;
 
@@ -22,8 +22,8 @@ public class MedicoRawDocument {
     public void setCrm(String crm) { this.crm = crm; }
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
-    public String getArquivoOrigem() { return arquivoOrigem; }
-    public void setArquivoOrigem(String arquivoOrigem) { this.arquivoOrigem = arquivoOrigem; }
+    public String getOrigem() { return origem; }
+    public void setOrigem(String origem) { this.origem = origem; }
     public LocalDateTime getDataImportacao() { return dataImportacao; }
     public void setDataImportacao(LocalDateTime dataImportacao) { this.dataImportacao = dataImportacao; }
     public Map<String, Object> getCamposOriginais() { return camposOriginais; }

@@ -31,15 +31,18 @@ public class MedicoBatchConfig {
         leitor.setQuery("{}");
         leitor.setTargetType(MedicoRawDocument.class);
         leitor.setSort(Map.of("_id", Sort.Direction.ASC));
+
         return leitor;
     }
 
     @Bean
-    public Step medicoStep(JobRepository repositorioDeJobs,
+    public Step medicoStep(
+            JobRepository repositorioDeJobs,
             PlatformTransactionManager gerenciadorDeTransacoes,
             MongoCursorItemReader<MedicoRawDocument> leitor,
             MedicoTransformService transformador,
-            MedicoRepository repositorioMedicos) {
+            MedicoRepository repositorioMedicos
+    ) {
         return new StepBuilder("normalizarMedicos", repositorioDeJobs)
                 .<MedicoRawDocument, MedicoDocument>chunk(100, gerenciadorDeTransacoes)
                 .reader(leitor)
