@@ -4,14 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.BatchStatus;
@@ -47,13 +48,18 @@ class MedicoCommandRunnerTest {
         IllegalStateException erro = assertThrows(IllegalStateException.class, runner::run);
 
         assertTrue(erro.getMessage().contains("MongoDB indisponivel"));
-        verify(raspador, never()).buscar(any());
+        verify(raspador, never()).buscar(any(), any());
     }
 
     @Test
     void executaBuscaImportacaoEEtlSemArgumentos() throws Exception {
         JsonNode resposta = new ObjectMapper().createObjectNode();
-        when(raspador.buscar(List.of("MG", "PR"))).thenReturn(Map.of("MG", resposta, "PR", resposta));
+        doAnswer(chamada -> {
+            BiConsumer<String, JsonNode> aoReceberPagina = chamada.getArgument(1);
+            aoReceberPagina.accept("MG", resposta);
+            aoReceberPagina.accept("PR", resposta);
+            return null;
+        }).when(raspador).buscar(eq(List.of("MG", "PR")), any());
         when(mongo.findDistinct(any(Query.class), eq("estado"), eq(MedicoRawDocument.class), eq(String.class)))
                 .thenReturn(List.of("MG", "PR"));
         JobExecution execucao = mock(JobExecution.class);
@@ -71,7 +77,12 @@ class MedicoCommandRunnerTest {
     @Test
     void naoProcessaQuandoFaltaUmEstado() throws Exception {
         JsonNode resposta = new ObjectMapper().createObjectNode();
-        when(raspador.buscar(List.of("MG", "PR"))).thenReturn(Map.of("MG", resposta, "PR", resposta));
+        doAnswer(chamada -> {
+            BiConsumer<String, JsonNode> aoReceberPagina = chamada.getArgument(1);
+            aoReceberPagina.accept("MG", resposta);
+            aoReceberPagina.accept("PR", resposta);
+            return null;
+        }).when(raspador).buscar(eq(List.of("MG", "PR")), any());
         when(mongo.findDistinct(any(Query.class), eq("estado"), eq(MedicoRawDocument.class), eq(String.class)))
                 .thenReturn(List.of("MG"));
 

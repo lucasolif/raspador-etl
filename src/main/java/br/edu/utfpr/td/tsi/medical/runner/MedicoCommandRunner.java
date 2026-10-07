@@ -2,7 +2,6 @@ package br.edu.utfpr.td.tsi.medical.runner;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.springframework.batch.core.BatchStatus;
@@ -15,8 +14,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 import br.edu.utfpr.td.tsi.medical.model.MedicoRawDocument;
 import br.edu.utfpr.td.tsi.medical.service.CfmScrapingService;
@@ -54,10 +51,7 @@ public class MedicoCommandRunner implements CommandLineRunner {
             throw new IllegalStateException("MongoDB indisponivel. Inicie o servidor configurado em MONGODB_URI antes da coleta.", erro);
         }
 
-        Map<String, JsonNode> respostas = this.raspador.buscar(ESTADOS);
-        for (Map.Entry<String, JsonNode> consulta : respostas.entrySet()) {
-            this.importador.importar(consulta.getValue(), consulta.getKey());
-        }
+        this.raspador.buscar(ESTADOS, (uf, resposta) -> this.importador.importar(resposta, uf));
 
         List<String> estados = this.mongoTemplate.findDistinct(new Query(), "estado", MedicoRawDocument.class, String.class);
         Set<String> estadosValidos = new HashSet<>(estados);
