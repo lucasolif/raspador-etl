@@ -20,7 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class CfmScrapingService {
+
     private static final String URL_BUSCA = "https://portal.cfm.org.br/busca-medicos/";
+    private static final int LIMITE_PAGINAS_POR_ESTADO = 5;
     private final ObjectMapper leitorJson;
 
     public CfmScrapingService(ObjectMapper leitorJson) {
@@ -29,9 +31,18 @@ public class CfmScrapingService {
 
     public void buscar(List<String> estados, BiConsumer<String, JsonNode> aoReceberPagina) throws JsonProcessingException {
 
+        String diretorioPerfil = java.nio.file.Path.of(
+                System.getProperty("user.home"),
+                "selenium",
+                "perfil-cfm"
+        ).toString();
+
         ChromeOptions opcoes = new ChromeOptions();
         opcoes.addArguments("--start-maximized");
+        opcoes.addArguments("--user-data-dir=" + diretorioPerfil);
+
         WebDriver navegador = new ChromeDriver(opcoes);
+
         try {
             navegador.get(URL_BUSCA);
             JavascriptExecutor javascript = (JavascriptExecutor) navegador;
@@ -77,11 +88,13 @@ public class CfmScrapingService {
                 if (totalPaginas > Integer.MAX_VALUE) {
                     throw new IllegalStateException("Paginacao inesperada do CFM para " + uf);
                 }
+                long paginasAConsultar = Math.min(totalPaginas, LIMITE_PAGINAS_POR_ESTADO);
+                long registrosEsperados = Math.min(total, paginasAConsultar * tamanhoPagina);
 
                 long recebidos = primeiraPagina.path("dados").size();
                 aoReceberPagina.accept(uf, primeiraPagina);
 
-                for (long numeroPagina = 2; numeroPagina <= totalPaginas; numeroPagina++) {
+                for (long numeroPagina = 2; numeroPagina <= paginasAConsultar; numeroPagina++) {
                     int pagina = (int) numeroPagina;
                     javascript.executeScript("window.__respostasCfm = []; window.__consultaEsperadaCfm = {uf: arguments[0], pagina: arguments[1]};", uf, pagina);
                     javascript.executeScript("jQuery('#paginacao').pagination('go', arguments[0]);", pagina);
@@ -90,9 +103,9 @@ public class CfmScrapingService {
                     aoReceberPagina.accept(uf, resposta);
                 }
 
-                if (recebidos != total) {
+                if (recebidos != registrosEsperados) {
                     throw new IllegalStateException("Consulta incompleta do CFM para " + uf
-                            + ": esperados " + total + " registros, recebidos " + recebidos);
+                            + ": esperados " + registrosEsperados + " registros, recebidos " + recebidos);
                 }
             }
         } finally {
@@ -100,8 +113,7 @@ public class CfmScrapingService {
         }
     }
 
-    private JsonNode aguardarPagina(WebDriver navegador, JavascriptExecutor javascript, String uf, int pagina)
-            throws JsonProcessingException {
+    private JsonNode aguardarPagina(WebDriver navegador, JavascriptExecutor javascript, String uf, int pagina) throws JsonProcessingException {
         String json;
         try {
             json = new WebDriverWait(navegador, Duration.ofMinutes(3)).until(driver -> {

@@ -36,6 +36,7 @@ public class MedicoTransformService {
     private MedicoEducation criarFormacao(String instituicaoOriginal, String dataGraduacao) {
         MedicoEducation formacao = new MedicoEducation();
         String[] partes = instituicaoOriginal.split("\\s+-\\s+", 2);
+
         formacao.setInstituicao(partes[0].isBlank() ? null : partes[0].trim());
         if (partes.length > 1 && !partes[1].isBlank()) {
             formacao.setCampus(partes[1].trim());
